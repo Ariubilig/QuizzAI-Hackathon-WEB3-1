@@ -24,8 +24,12 @@ const QuizGame = () => {
 
     // Profile State - use stored username or generate random
     const getInitialUsername = () => {
-        const storedUsername = localStorage.getItem('quiz_username');
-        return storedUsername || generateRandomUsername();
+        const storedProfile = localStorage.getItem('userProfile');
+        if (storedProfile) {
+            const profile = JSON.parse(storedProfile);
+            return profile.username || generateRandomUsername();
+        }
+        return generateRandomUsername();
     };
 
     const [userProfile, setUserProfile] = useState({
@@ -54,12 +58,22 @@ const QuizGame = () => {
 
         if (savedProfile) {
             const profile = JSON.parse(savedProfile);
-            // Update username from localStorage if available
-            const currentUsername = localStorage.getItem('quiz_username');
-            if (currentUsername) {
-                profile.username = currentUsername;
-            }
             setUserProfile(profile);
+        } else {
+            // Initialize profile if not exists
+            const initialProfile = {
+                username: getInitialUsername(),
+                balance: 1000,
+                history: [],
+                stats: {
+                    totalGames: 0,
+                    wins: 0,
+                    losses: 0,
+                    winRate: 0
+                }
+            };
+            setUserProfile(initialProfile);
+            localStorage.setItem('userProfile', JSON.stringify(initialProfile));
         }
 
         if (savedState) {

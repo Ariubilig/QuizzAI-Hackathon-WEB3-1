@@ -156,7 +156,7 @@ export default function Leaderboard() {
 
   // Helper to generate confetti
   const renderConfetti = () => {
-    const confettiCount = 50;
+    const confettiCount = 30; // Reduced from 50 for better performance
     return (
       <div className="confetti-container">
         {[...Array(confettiCount)].map((_, i) => (

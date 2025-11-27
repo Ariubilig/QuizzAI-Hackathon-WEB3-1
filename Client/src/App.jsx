@@ -12,9 +12,9 @@ function App() {
   const [showUsernameModal, setShowUsernameModal] = useState(false);
 
   useEffect(() => {
-    // Check for existing username
-    const storedUsername = localStorage.getItem('quiz_username');
-    if (!storedUsername) {
+    // Check for existing userProfile
+    const storedProfile = localStorage.getItem('userProfile');
+    if (!storedProfile) {
       setShowUsernameModal(true);
     }
   }, []);
