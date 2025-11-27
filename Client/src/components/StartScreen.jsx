@@ -1,50 +1,22 @@
-import React, { useState } from 'react';
-import WalletConnect from './WalletConnect';
-import { useAccount } from 'wagmi';
+import React from 'react';
 
-const StartScreen = ({ onStart, history,setHaveamount }) => {
-    const [showWalletConnect, setShowWalletConnect] = useState(false);
-    const { isConnected } = useAccount();
-
-    const handleTakeQuiz = () => {
-        // If wallet already connected, skip modal
-        if (isConnected) {
-            onStart();
-        } else {
-            setShowWalletConnect(true);
-        }
-    };
-
-    const handleWalletConnect = (walletType) => {
-        console.log('Connected with:', walletType);
-        setShowWalletConnect(false);
-        onStart();
-    };
-
-    const handleSkipWallet = () => {
-        setShowWalletConnect(false);
-        setHaveamount(false);
-        onStart();
-    };
-
+const StartScreen = ({ onStart, onProfile, history, balance, username }) => {
     return (
         <div className="start-screen">
-            {showWalletConnect && (
-                <WalletConnect 
-                    onConnect={handleWalletConnect}
-                    onSkip={handleSkipWallet}
-                />
-            )}
+            <div className="profile-btn-container" onClick={onProfile}>
+                <span>👤 {username}</span>
+                <span className="balance-badge">{balance} 🪙</span>
+            </div>
 
             <div className="start-screen-main">
                 <h1>Infinite Quiz AI</h1>
                 <p>10 Questions. 45 Seconds. Prove your knowledge.</p>
-                
+
                 <div className="start-actions">
-                    <button onClick={handleTakeQuiz} className="btn-primary">Take Quiz</button>
+                    <button onClick={onStart} className="btn-primary">Take Quiz</button>
                 </div>
             </div>
-            
+
             {history && history.length > 0 && (
                 <div className="history-section">
                     <h3>Recent History</h3>

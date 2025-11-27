@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SelectCategory from './SelectCategory';
 import StartScreen from './StartScreen';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import Profile from './Profile';
 
 const QuizGame = () => {
-    const [haveamount, setHaveamount] = useState(true)
+    // Generate random username
+    const generateRandomUsername = () => {
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        return `Player${randomNum}`;
+    };
+
     const [loading, setLoading] = useState(false);
     const [quizData, setQuizData] = useState(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -16,27 +21,39 @@ const QuizGame = () => {
     const timerRef = useRef(null);
 
     const [endTime, setEndTime] = useState(null);
-    const [quizHistory, setQuizHistory] = useState([]);
+
+    // Profile State
+    const [userProfile, setUserProfile] = useState({
+        username: generateRandomUsername(),
+        balance: 1000,
+        history: [],
+        stats: {
+            totalGames: 0,
+            wins: 0,
+            losses: 0,
+            winRate: 0
+        }
+    });
 
     const [selectedCategory, setSelectedCategory] = useState('Mixed');
     const [selectedDifficulty, setSelectedDifficulty] = useState('Mixed');
-    const [view, setView] = useState('home'); // home, category, playing, result
-    
+    const [view, setView] = useState('home'); // home, category, profile, playing, result
+
     const categories = ['Mixed', 'Science', 'History', 'Geography', 'Technology', 'Space', 'Pop Culture', 'Mathematics'];
     const difficulties = ['Mixed', 'Easy', 'Medium', 'Hard'];
 
     // Load state from localStorage on mount
     useEffect(() => {
         const savedState = localStorage.getItem('quizState');
-        const savedHistory = localStorage.getItem('quizHistory');
-        
-        if (savedHistory) {
-            setQuizHistory(JSON.parse(savedHistory));
+        const savedProfile = localStorage.getItem('userProfile');
+
+        if (savedProfile) {
+            setUserProfile(JSON.parse(savedProfile));
         }
 
         if (savedState) {
             const parsed = JSON.parse(savedState);
-            
+
             // Calculate remaining time based on stored endTime
             let remainingTime = 0;
             if (parsed.endTime && !parsed.gameOver) {
@@ -53,7 +70,7 @@ const QuizGame = () => {
             setTimeLeft(remainingTime);
             setEndTime(parsed.endTime);
             setGameOver(parsed.gameOver);
-            
+
             if (parsed.selectedCategory) {
                 setSelectedCategory(parsed.selectedCategory);
             }
@@ -103,7 +120,7 @@ const QuizGame = () => {
         setSelectedAnswers({});
         setTimeLeft(45);
         setEndTime(null);
-        
+
         // Clear previous state
         localStorage.removeItem('quizState');
 
@@ -113,27 +130,27 @@ const QuizGame = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     category: selectedCategory,
-                    difficulty: selectedDifficulty 
+                    difficulty: selectedDifficulty
                 }),
             });
             if (!response.ok) {
                 throw new Error('Failed to fetch quiz');
             }
             const data = await response.json();
-            
+
             if (!data || !data.questions || !Array.isArray(data.questions) || data.questions.length === 0) {
                 throw new Error('Invalid quiz data received from server');
             }
-            
+
             setQuizData(data);
             setView('playing');
-            
+
             // Set end time 45 seconds from now
             const calculatedEndTime = Date.now() + 45000;
             setEndTime(calculatedEndTime);
-            
+
             startTimer();
         } catch (err) {
             console.error("Fetch error:", err);
@@ -142,6 +159,25 @@ const QuizGame = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleStartGame = () => {
+        if (userProfile.balance < 50) {
+            alert("Not enough coins! You need 50 coins to play.");
+            return;
+        }
+
+        // Deduct entry fee
+        setUserProfile(prev => {
+            const newProfile = {
+                ...prev,
+                balance: prev.balance - 50
+            };
+            localStorage.setItem('userProfile', JSON.stringify(newProfile));
+            return newProfile;
+        });
+
+        fetchQuiz();
     };
 
     const startTimer = () => {
@@ -172,22 +208,40 @@ const QuizGame = () => {
             }
         });
         setScore(newScore);
-        
+
+        // Determine Win/Loss
+        const isWin = newScore >= 7; // 70% win rate required
+        const reward = isWin ? 100 : 0;
+        const coinChange = isWin ? 50 : -50; // Net change (Reward - Entry Fee)
+
         const newHistoryItem = {
             id: quizData.quiz_id || Date.now(),
             date: new Date().toLocaleString(),
             score: newScore,
             total: quizData.questions.length,
-            category: selectedCategory
+            category: selectedCategory,
+            result: isWin ? 'Win' : 'Loss',
+            coinChange: coinChange
         };
 
-        setQuizHistory(prev => {
-            if (prev.length > 0 && prev[0].id === newHistoryItem.id) {
-                return prev;
-            }
-            const newHistory = [newHistoryItem, ...prev].slice(0, 10);
-            localStorage.setItem('quizHistory', JSON.stringify(newHistory));
-            return newHistory;
+        setUserProfile(prev => {
+            const newHistory = [newHistoryItem, ...prev.history].slice(0, 20);
+            const newStats = {
+                totalGames: prev.stats.totalGames + 1,
+                wins: prev.stats.wins + (isWin ? 1 : 0),
+                losses: prev.stats.losses + (isWin ? 0 : 1),
+                winRate: 0
+            };
+            newStats.winRate = Math.round((newStats.wins / newStats.totalGames) * 100);
+
+            const newProfile = {
+                balance: prev.balance + reward,
+                history: newHistory,
+                stats: newStats
+            };
+
+            localStorage.setItem('userProfile', JSON.stringify(newProfile));
+            return newProfile;
         });
     };
 
@@ -220,8 +274,18 @@ const QuizGame = () => {
     };
 
     const handlePlayAgain = () => {
-        // Go to category selection instead of immediate restart
         setView('category');
+    };
+
+    const handleUsernameChange = (newUsername) => {
+        setUserProfile(prev => {
+            const newProfile = {
+                ...prev,
+                username: newUsername
+            };
+            localStorage.setItem('userProfile', JSON.stringify(newProfile));
+            return newProfile;
+        });
     };
 
     useEffect(() => {
@@ -236,98 +300,88 @@ const QuizGame = () => {
         }
     }, [gameOver]);
 
-
-    // Wallet button component for top right
-    const WalletButton = () => 
-        {haveamount && 
-        <div className="wallet-button-container">
-            <ConnectButton chainStatus="icon" showBalance={false} />
-        </div>
-        };
-
     if (loading) {
         return (
-            <>
-                <WalletButton />
-                <div className="loading-container">Generating {selectedCategory} Quiz...</div>
-            </>
+            <div className="loading-container">Generating {selectedCategory} Quiz...</div>
         );
     }
 
     if (error) {
         return (
-            <>
-                <WalletButton />
-                <div className="error-container">
-                    <p>Error: {error}</p>
-                    <button onClick={() => setView('home')} className="btn-primary">Go Home</button>
-                </div>
-            </>
+            <div className="error-container">
+                <p>Error: {error}</p>
+                <button onClick={() => setView('home')} className="btn-primary">Go Home</button>
+            </div>
         );
     }
 
     // View Routing
     if (view === 'home') {
         return (
-            <>
-                <WalletButton />
-                <StartScreen 
-                    onStart={() => setView('category')} 
-                    history={quizHistory} 
-                    setHaveamount={setHaveamount}
-                />
-            </>
+            <StartScreen
+                onStart={() => setView('category')}
+                onProfile={() => setView('profile')}
+                history={userProfile.history}
+                balance={userProfile.balance}
+                username={userProfile.username}
+            />
+        );
+    }
+
+    if (view === 'profile') {
+        return (
+            <Profile
+                onBack={() => setView('home')}
+                history={userProfile.history}
+                balance={userProfile.balance}
+                stats={userProfile.stats}
+                username={userProfile.username}
+                onUsernameChange={handleUsernameChange}
+            />
         );
     }
 
     if (view === 'category') {
         return (
-            <>
-                <WalletButton />
-                <SelectCategory 
-                    categories={categories}
-                    selectedCategory={selectedCategory}
-                    onSelectCategory={setSelectedCategory}
-                    difficulties={difficulties}
-                    selectedDifficulty={selectedDifficulty}
-                    onSelectDifficulty={setSelectedDifficulty}
-                    onStart={fetchQuiz}
-                    onBack={() => setView('home')}
-                    haveamount={haveamount}
-                />
-            </>
+            <SelectCategory
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+                difficulties={difficulties}
+                selectedDifficulty={selectedDifficulty}
+                onSelectDifficulty={setSelectedDifficulty}
+                onStart={handleStartGame}
+                onBack={() => setView('home')}
+            />
         );
     }
 
     if (view === 'result') {
         return (
-            <>
-                <WalletButton />
-                <div className="results-screen">
-                    <h2>Game Over</h2>
-                    <div className="score-display">
-                        <span className="score-value">{score}</span>
-                        <span className="score-total">/ {quizData?.questions?.length || 10}</span>
-                    </div>
-                    <p>Time Remaining: {timeLeft}s</p>
-                    <div className="action-buttons">
-                        <button onClick={handlePlayAgain} className="btn-primary">Play Again</button>
-                        <button onClick={handleHome} className="btn-secondary">Home</button>
-                    </div>
-                    
-                    <div className="answers-review">
-                        <h3>Review</h3>
-                        {quizData?.questions.map((q, index) => (
-                            <div key={q.id} className={`review-item ${selectedAnswers[q.id] === q.correct_answer ? 'correct' : 'incorrect'}`}>
-                                <p><strong>Q{index + 1}:</strong> {q.question}</p>
-                                <p>Your Answer: {selectedAnswers[q.id] || 'Skipped'}</p>
-                                <p>Correct Answer: {q.correct_answer}</p>
-                                <p className="explanation">{q.explanation}</p>
-                            </div>
-                        ))}
-                    </div>
+            <div className="results-screen">
+                <h2>Game Over</h2>
+                <div className="score-display">
+                    <span className="score-value">{score}</span>
+                    <span className="score-total">/ {quizData?.questions?.length || 10}</span>
                 </div>
-            </>
+                <p>Time Remaining: {timeLeft}s</p>
+                <div className="action-buttons">
+                    <button onClick={handlePlayAgain} className="btn-primary">Play Again</button>
+                    <button onClick={handleHome} className="btn-secondary">Home</button>
+                </div>
+
+                <div className="answers-review">
+                    <h3>Review</h3>
+                    {quizData?.questions.map((q, index) => (
+                        <div key={q.id} className={`review-item ${selectedAnswers[q.id] === q.correct_answer ? 'correct' : 'incorrect'}`}>
+                            <p><strong>Q{index + 1}:</strong> {q.question}</p>
+                            <p>Your Answer: {selectedAnswers[q.id] || 'Skipped'}</p>
+                            <p>Correct Answer: {q.correct_answer}</p>
+                            <p className="explanation">{q.explanation}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
         );
     }
 
@@ -339,45 +393,41 @@ const QuizGame = () => {
     }
 
     return (
-        <>
-            <WalletButton />
-            <div className="game-container">
-                <div className="game-header">
-                    <div className="timer" style={{ color: timeLeft < 10 ? 'red' : 'inherit' }}>
-                        Time: {timeLeft}s
-                    </div>
-                    <div className="progress">
-                        Question {currentQuestionIndex + 1} / {quizData.questions.length}
-                    </div>
+        <div className="game-container">
+            <div className="game-header">
+                <div className="timer" style={{ color: timeLeft < 10 ? 'red' : 'inherit' }}>
+                    Time: {timeLeft}s
                 </div>
-
-                <div className="question-card">
-                    <div className="category-badge">{currentQuestion.category} - {currentQuestion.difficulty}</div>
-                    <h2 className="question-text">{currentQuestion.question}</h2>
-                    
-                    <div className="options-grid">
-                        {currentQuestion.options.map((opt, idx) => {
-                            const letter = ['A', 'B', 'C', 'D'][idx];
-                            const isSelected = selectedAnswers[currentQuestion.id] === letter;
-                            return (
-                                <button 
-                                    key={letter} 
-                                    className={`option-btn ${isSelected ? 'selected' : ''}`}
-                                    onClick={() => {
-                                        handleAnswerSelect(currentQuestion.id, letter);
-                                        handleNext()
-                                    }}
-                                >
-                                    <span className="option-letter">{letter}</span>
-                                    <span className="option-text">{opt}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
+                <div className="progress">
+                    Question {currentQuestionIndex + 1} / {quizData.questions.length}
                 </div>
-
             </div>
-        </>
+
+            <div className="question-card">
+                <div className="category-badge">{currentQuestion.category} - {currentQuestion.difficulty}</div>
+                <h2 className="question-text">{currentQuestion.question}</h2>
+
+                <div className="options-grid">
+                    {currentQuestion.options.map((opt, idx) => {
+                        const letter = ['A', 'B', 'C', 'D'][idx];
+                        const isSelected = selectedAnswers[currentQuestion.id] === letter;
+                        return (
+                            <button
+                                key={letter}
+                                className={`option-btn ${isSelected ? 'selected' : ''}`}
+                                onClick={() => {
+                                    handleAnswerSelect(currentQuestion.id, letter);
+                                    handleNext()
+                                }}
+                            >
+                                <span className="option-letter">{letter}</span>
+                                <span className="option-text">{opt}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        </div>
     );
 };
 
