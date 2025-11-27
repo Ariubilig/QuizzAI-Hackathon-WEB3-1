@@ -48,7 +48,7 @@ const SelectCategory = ({
                 ))}
             </div>
             
-            <div className="stake-input-section">
+            {!haveamount && <div className="stake-input-section">
                 <label htmlFor="stake-amount">
                     Stake Amount (ETH)
                 </label>
@@ -61,14 +61,13 @@ const SelectCategory = ({
                     onChange={handleStakeChange}
                     placeholder="Enter stake amount"
                     className="stake-input"
-                    disabled={!haveamount}
                 />
                 {stakeAmount && (
                     <p className="stake-preview">
                         Stake: {stakeAmount} ETH
                     </p>
                 )}
-            </div>
+            </div>}
 
             <div className="action-buttons">
                 <button onClick={onBack} className="btn-secondary">Back</button>
