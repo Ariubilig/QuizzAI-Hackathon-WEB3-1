@@ -1,11 +1,13 @@
 import { useState, useRef } from "react";
 import { supabase } from "../../supabaseClient";
 import { useNavigate } from "react-router-dom";
+import { useBackPage } from "../../hooks/useBackPage";
 
 export default function JoinRoom() {
   const [code, setCode] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const goBack = useBackPage('/multiplayer');
   const inputs = useRef([]);
 
   const processInput = (e, slot) => {
@@ -154,11 +156,11 @@ export default function JoinRoom() {
       </button>
       
       <button 
-        onClick={() => navigate('/multiplayer')}
-        className="btn-back-menu"
-        style={{ marginTop: '1rem' }}
+        onClick={goBack}
+        className="btn-back-svg"
+        aria-label="Back"
       >
-        ← Back
+        <img src="/Back.svg" alt="Back" />
       </button>
     </div>
   );

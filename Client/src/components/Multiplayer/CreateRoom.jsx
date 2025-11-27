@@ -2,10 +2,12 @@ import { useState } from "react";
 import { supabase } from "../../supabaseClient";
 import { generateRoomCode } from "../../utils/generateRoomCode";
 import { useNavigate } from "react-router-dom";
+import { useBackPage } from "../../hooks/useBackPage";
 
 export default function CreateRoom() {
   const [roomCode, setRoomCode] = useState(null);
   const navigate = useNavigate();
+  const goBack = useBackPage('/multiplayer');
 
   async function createRoom() {
     const code = generateRoomCode();
@@ -70,11 +72,11 @@ export default function CreateRoom() {
       {roomCode && <p className="room-code-text">Your room code: <span className="room-code-highlight">{roomCode}</span></p>}
       
       <button 
-        onClick={() => navigate('/multiplayer')}
-        className="btn-back-menu"
-        style={{ marginTop: '1rem' }}
+        onClick={goBack}
+        className="btn-back-svg"
+        aria-label="Back"
       >
-        ← Back
+        <img src="/Back.svg" alt="Back" />
       </button>
     </div>
   );

@@ -1,8 +1,21 @@
 import React, { useState } from 'react';
+import { useBackPage } from '../hooks/useBackPage';
 
 const Profile = ({ onBack, history, balance, stats, username, onUsernameChange }) => {
     const [isEditingUsername, setIsEditingUsername] = useState(false);
     const [tempUsername, setTempUsername] = useState(username);
+
+    // Determine if onBack is a path string or undefined
+    const backPath = typeof onBack === 'string' ? onBack : undefined;
+    const goBack = useBackPage(backPath);
+
+    const handleBack = () => {
+        if (typeof onBack === 'function') {
+            onBack();
+        } else {
+            goBack();
+        }
+    };
 
     const handleUsernameClick = () => {
         setIsEditingUsername(true);
@@ -96,7 +109,9 @@ const Profile = ({ onBack, history, balance, stats, username, onUsernameChange }
                 )}
             </div>
 
-            <button onClick={onBack} className="btn-secondary back-btn">Back to Home</button>
+            <button onClick={handleBack} className="btn-back-svg" aria-label="Back">
+                <img src="/Back.svg" alt="Back" />
+            </button>
         </div>
     );
 };

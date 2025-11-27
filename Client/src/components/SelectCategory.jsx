@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useBackPage } from '../hooks/useBackPage';
 
 const SelectCategory = ({ 
     categories, 
@@ -12,6 +13,19 @@ const SelectCategory = ({
     haveamount
 }) => {
     const [stakeAmount, setStakeAmount] = useState('');
+    
+    // Determine if onBack is a path string or undefined
+    const backPath = typeof onBack === 'string' ? onBack : undefined;
+    const goBack = useBackPage(backPath);
+
+    const handleBack = () => {
+        if (typeof onBack === 'function') {
+            onBack();
+        } else {
+            goBack();
+        }
+    };
+
     const handleStakeChange = (e) => {
         const value = e.target.value;
         // Only allow positive numbers
@@ -69,8 +83,11 @@ const SelectCategory = ({
                 )}
             </div>}
 
+            <button onClick={handleBack} className="btn-back-svg" aria-label="Back">
+                <img src="/Back.svg" alt="Back" />
+            </button>
+
             <div className="action-buttons">
-                <button onClick={onBack} className="btn-secondary">Back</button>
                 <button onClick={onStart} className="btn-primary">Start Quiz</button>
             </div>
         </div>
