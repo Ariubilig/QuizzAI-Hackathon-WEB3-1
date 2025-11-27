@@ -363,7 +363,10 @@ const QuizGame = () => {
                                 <button 
                                     key={letter} 
                                     className={`option-btn ${isSelected ? 'selected' : ''}`}
-                                    onClick={() => handleAnswerSelect(currentQuestion.id, letter)}
+                                    onClick={() => {
+                                        handleAnswerSelect(currentQuestion.id, letter);
+                                        handleNext()
+                                    }}
                                 >
                                     <span className="option-letter">{letter}</span>
                                     <span className="option-text">{opt}</span>
@@ -373,15 +376,6 @@ const QuizGame = () => {
                     </div>
                 </div>
 
-                <div className="game-footer">
-                    <button 
-                        className="btn-next" 
-                        onClick={handleNext}
-                        disabled={!selectedAnswers[currentQuestion.id]}
-                    >
-                        {currentQuestionIndex === quizData.questions.length - 1 ? 'Finish' : 'Next'}
-                    </button>
-                </div>
             </div>
         </>
     );
