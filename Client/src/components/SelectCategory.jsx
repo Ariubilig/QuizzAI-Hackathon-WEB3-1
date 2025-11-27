@@ -8,10 +8,10 @@ const SelectCategory = ({
     selectedDifficulty,
     onSelectDifficulty,
     onStart, 
-    onBack 
+    onBack,
+    haveamount
 }) => {
     const [stakeAmount, setStakeAmount] = useState('');
-
     const handleStakeChange = (e) => {
         const value = e.target.value;
         // Only allow positive numbers
@@ -61,6 +61,7 @@ const SelectCategory = ({
                     onChange={handleStakeChange}
                     placeholder="Enter stake amount"
                     className="stake-input"
+                    disabled={!haveamount}
                 />
                 {stakeAmount && (
                     <p className="stake-preview">

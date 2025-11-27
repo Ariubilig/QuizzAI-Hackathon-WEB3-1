@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import WalletConnect from './WalletConnect';
 import { useAccount } from 'wagmi';
 
-const StartScreen = ({ onStart, history }) => {
+const StartScreen = ({ onStart, history,setHaveamount }) => {
     const [showWalletConnect, setShowWalletConnect] = useState(false);
     const { isConnected } = useAccount();
 
@@ -23,6 +23,7 @@ const StartScreen = ({ onStart, history }) => {
 
     const handleSkipWallet = () => {
         setShowWalletConnect(false);
+        setHaveamount(false);
         onStart();
     };
 

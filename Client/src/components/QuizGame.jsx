@@ -4,6 +4,7 @@ import StartScreen from './StartScreen';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 const QuizGame = () => {
+    const [haveamount, setHaveamount] = useState(true)
     const [loading, setLoading] = useState(false);
     const [quizData, setQuizData] = useState(null);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -272,6 +273,7 @@ const QuizGame = () => {
                 <StartScreen 
                     onStart={() => setView('category')} 
                     history={quizHistory} 
+                    setHaveamount={setHaveamount}
                 />
             </>
         );
@@ -290,6 +292,7 @@ const QuizGame = () => {
                     onSelectDifficulty={setSelectedDifficulty}
                     onStart={fetchQuiz}
                     onBack={() => setView('home')}
+                    haveamount={haveamount}
                 />
             </>
         );
