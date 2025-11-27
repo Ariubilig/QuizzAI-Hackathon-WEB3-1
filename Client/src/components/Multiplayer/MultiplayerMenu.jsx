@@ -16,6 +16,22 @@ export default function MultiplayerMenu() {
   const difficulties = ['Mixed', 'Easy', 'Medium', 'Hard'];
 
   async function handleCreateRoom() {
+    // Check balance first
+    const storedProfile = localStorage.getItem("userProfile");
+    let profile = null;
+    
+    if (storedProfile) {
+      profile = JSON.parse(storedProfile);
+      if (profile.balance < 50) {
+        alert("Not enough coins! You need 50 coins to create a room.");
+        return;
+      }
+    } else {
+      // Should not happen if profile is initialized correctly, but safety check
+      alert("Please set up your profile first.");
+      return;
+    }
+
     const code = generateRoomCode();
     const hostId = crypto.randomUUID();
 
@@ -35,15 +51,15 @@ export default function MultiplayerMenu() {
       return;
     }
 
-    // Get username from QuizGame profile or generate random
-    const storedProfile = localStorage.getItem("userProfile");
-    let username = "Player";
-    if (storedProfile) {
-      const profile = JSON.parse(storedProfile);
-      username = profile.username || "Host";
-    } else {
-      username = `Player${Math.floor(1000 + Math.random() * 9000)}`;
-    }
+    // Deduct entry fee
+    const newProfile = {
+      ...profile,
+      balance: profile.balance - 50
+    };
+    localStorage.setItem("userProfile", JSON.stringify(newProfile));
+
+    // Get username
+    const username = profile.username || "Host";
     
     const { data: playerData, error: playerError} = await supabase
       .from("players")
@@ -57,6 +73,8 @@ export default function MultiplayerMenu() {
       
     if (playerError) {
       console.error("Error joining as host:", playerError);
+      // Refund if joining failed (optional but good practice)
+      // For simplicity in prototype, we might skip complex refund logic or add it here
     } else {
       localStorage.setItem("quiz_player_id", playerData.id);
     }

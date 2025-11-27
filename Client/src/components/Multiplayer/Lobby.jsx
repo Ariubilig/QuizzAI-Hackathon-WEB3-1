@@ -50,15 +50,36 @@ export default function Lobby() {
       .on(
         "postgres_changes",
         { 
-          event: "UPDATE", 
+          event: "*", // Listen to ALL events (UPDATE and DELETE)
           schema: "public", 
           table: "rooms", 
           filter: `code=eq.${roomCode}` 
         },
         (payload) => {
           console.log('Room change:', payload);
-          if (payload.new.status === "playing") {
+          
+          // Handle Game Start
+          if (payload.eventType === 'UPDATE' && payload.new.status === "playing") {
             navigate(`/game/${roomCode}`);
+          }
+          
+          // Handle Room Deleted (Host Cancelled)
+          if (payload.eventType === 'DELETE') {
+            // If I am not the host (Host handles their own refund in handleCancel)
+            // We can check if we are still on this page, meaning we are a joiner
+            const storedProfile = localStorage.getItem("userProfile");
+            if (storedProfile) {
+              const profile = JSON.parse(storedProfile);
+              // Refund 50 coins
+              const newProfile = {
+                ...profile,
+                balance: profile.balance + 50
+              };
+              localStorage.setItem("userProfile", JSON.stringify(newProfile));
+              alert("Host cancelled the room. 50 coins refunded.");
+            }
+            localStorage.removeItem("quiz_player_id");
+            navigate("/multiplayer");
           }
         }
       )
@@ -160,6 +181,17 @@ export default function Lobby() {
       .delete()
       .eq("code", roomCode);
     
+    // Refund the host
+    const storedProfile = localStorage.getItem("userProfile");
+    if (storedProfile) {
+      const profile = JSON.parse(storedProfile);
+      const newProfile = {
+        ...profile,
+        balance: profile.balance + 50
+      };
+      localStorage.setItem("userProfile", JSON.stringify(newProfile));
+    }
+
     localStorage.removeItem("quiz_player_id");
     navigate("/multiplayer");
   }
@@ -173,6 +205,17 @@ export default function Lobby() {
       .delete()
       .eq("id", playerId);
     
+    // Refund the joiner
+    const storedProfile = localStorage.getItem("userProfile");
+    if (storedProfile) {
+      const profile = JSON.parse(storedProfile);
+      const newProfile = {
+        ...profile,
+        balance: profile.balance + 50
+      };
+      localStorage.setItem("userProfile", JSON.stringify(newProfile));
+    }
+
     localStorage.removeItem("quiz_player_id");
     navigate("/multiplayer");
   }

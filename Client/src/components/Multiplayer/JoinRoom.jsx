@@ -38,16 +38,26 @@ export default function JoinRoom() {
   };
 
   async function joinRoom(roomCode = code.join("")) {
-    // Get username from localStorage
-    const username = localStorage.getItem("quiz_username");
-    
-    if (!roomCode || roomCode.length !== 4) {
-      return;
-    }
+    // Get username and profile from localStorage
+    const storedProfile = localStorage.getItem("userProfile");
+    let profile = null;
+    let username = null;
 
-    if (!username) {
+    if (storedProfile) {
+      profile = JSON.parse(storedProfile);
+      username = profile.username;
+      
+      if (profile.balance < 50) {
+        alert("Not enough coins! You need 50 coins to join a room.");
+        return;
+      }
+    } else {
       alert("Please set your username first");
       navigate("/");
+      return;
+    }
+    
+    if (!roomCode || roomCode.length !== 4) {
       return;
     }
 
@@ -108,6 +118,13 @@ export default function JoinRoom() {
         setLoading(false);
         return;
       }
+
+      // Deduct entry fee
+      const newProfile = {
+        ...profile,
+        balance: profile.balance - 50
+      };
+      localStorage.setItem("userProfile", JSON.stringify(newProfile));
 
       localStorage.setItem("quiz_player_id", playerData.id);
       navigate(`/lobby/${upperCode}`);
